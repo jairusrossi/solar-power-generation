@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>Power Plant Generation by Fuel Source</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: whitesmoke;
+            font-family: Lato, sans-serif;
+            color: #0D0000;
+        }
+        
+        header {
+            padding: 6px 10%;
+        }
+        
+        h1 {
+            display: inline-block;
+            margin-right: 20px;
+            color: #001323;
+        }
+        
+        h2 {
+            display: inline-block;
+            color: #001323;
+        }
+        
+        #map {
+            width: 80%;
+            height: 540px;
+            margin: 10px auto;
+        }
+        
+        footer {
+            padding: 6px 10%;
+            width: 80%;
+        }
+        
+        p {
+            font-size: 1em;
+            color: #001323;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Power Plant Generation Capacity by Fuel Source</h1>
+        <br>
+        <h2>Coal, Nuclear, and Natural Gas  </h2>
+    </header>
+
+    <div id='map'></div>
+
+    <footer>
+        <p>Map authored by Jairus Rossi</p>
+        <p>This map displays all power plants in the US which produce energy using coal, nuclear, or natural gas sources. The size of the circle represents the relative power generation capacity for that particular fuel source. Power generation by source can be toggled on and off using the layer selector in the top right of the screen. The map will display all power plants within a 500 km radius of each mouse click. Additional information on each plant can be gained by clicking on the corresponding circle. All data presented was obtained from the <a href="http://www.eia.gov/electricity/data/eia923"> EIA </a>. </p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="power-plants.js"></script>
+    <script>
+        var map = L.map('map', {
+            center: [36, -94],
+            zoom: 4,
+        });
+
+        var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        });
+
+        tiles.addTo(map);
+
+        var commonStyles = {
+            weight: 1,
+            stroke: 1,
+            fillOpacity: .5
+        }
+
+        //below code sets up the layer names, corresponding source info, and symbology
+        var layerInfo = {
+            nuclearLayer: {
+                source: "Nuclear",
+                color: '#3FFA5B'
+            },
+            coalLayer: {
+                source: "Coal",
+                color: '#D3D3D3'
+            },
+            gasLayer: {
+                source: "Natural Gas",
+                color: '#FAA23F'
+            }
+        };
+
+        //empty layer for use in looping structure. acts as a container as the 'for' command cycles through the plant layers 
+        var geoJsonLayers = {};
+
+        for (var layer in layerInfo) { //takes each layer on its own and cycles through the code
+            geoJsonLayers[layer] = L.geoJson(plants, { //geoJsonlayer is defiend through a fucntion where plants are passed as an arguement
+                pointToLayer: function (feature, latlng) { // then turned into a point
+                    return L.circleMarker(latlng, commonStyles); //returned as a marker with styles specified above
+                },
+                filter: function (feature) { //then filtered by source
+                    if (feature.properties.fuel_source[layerInfo[layer].source]) {
+                        return feature;
+                    }
+                },
+                style: function (feature) { //and symbolized according to source where 'layer' in layerInfo is still passed as the argument
+                    return {
+                        color: layerInfo[layer].color,
+                        fillColor: layerInfo[layer].color,
+                        radius: getRadius(feature.properties.fuel_source[layerInfo[layer].source]) //radius is defined by power generation capacity contained in the 'source' property
+                    }
+                }
+            }).addTo(map);
+        }
+
+        //wraps labels in hypertext with certain colors that match the symbology
+        var sourcesLabels = {
+            "<b style='color:#3FFA5B'>Nuclear</b>": geoJsonLayers.nuclearLayer, //specifies nuclear layer as category 
+            "<b style='color:#D3D3D3'>Coal</b>": geoJsonLayers.coalLayer,
+            "<b style='color:#FAA23F'; text-shadow: 0px 0px 1px #333;'>Natural Gas</b>": geoJsonLayers.gasLayer
+        }
+
+        L.control.layers(null, sourcesLabels, { //adds a control toggle option in top right of the map
+            collapsed: false
+        }).addTo(map);
+
+
+        //map click event 
+        map.on('click', function (e) {
+            for (var l in layerInfo) { //different name is needed for the layer, though it still refers to each individual plant
+                geoJsonLayers[l].eachLayer(function (layer) { //the different name would be in conflict here since the eachLayer command also uses layer as an argument.  this way you are passing the layer twice, but each case is distinguished. 
+                    var distance = e.latlng.distanceTo(layer.getLatLng()) / 1000; //distance between click event 'e' and layer
+
+                    if (distance > 500) { //filter within a certain radius - anything larger that 500 km is not symbolized
+                        layer.setStyle({
+                            stroke: false,
+                            fill: false
+                        });
+
+                    } else { //anything closer is symbolized.
+                        layer.setStyle({
+                            stroke: true,
+                            fill: true
+                        });
+
+                        layer.bindPopup(
+                            "<b>Plant Name: </b>" + layer.feature.properties.plant_name + "<br>" + "<b> Fuel Source: </b>" +
+                            layerInfo[l].source + "<br>" + "<b>Distance: </b>" + distance.toLocaleString() + " km from the click point."
+                        );
+
+                    };
+                });
+            }
+        });
+
+
+
+        function getRadius(val) {
+            var radius = Math.sqrt(val / Math.PI);
+            return radius * .28;
+        }
+    </script>
+
+</body>
+
+</html>
