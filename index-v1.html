@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>Lesson 08 Annotation</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: whitesmoke;
+            font-family: Lato, sans-serif;
+            color: #0D0000;
+        }
+        
+        header {
+            padding: 6px 10%;
+        }
+        
+        h1 {
+            display: inline-block;
+            margin-right: 20px;
+            color: #001323;
+        }
+        
+        h2 {
+            display: inline-block;
+            color: #001323;
+        }
+        
+        #map {
+            width: 80%;
+            height: 540px;
+            margin: 10px auto;
+        }
+        
+        footer {
+            padding: 6px 10%;
+            width: 80%;
+        }
+        
+        p {
+            font-size: 1em;
+            color: #001323;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Map Title</h1>
+        <h2>Map Subtitle</h2>
+    </header>
+
+    <div id='map'></div>
+
+    <footer>
+        <p>Map authored by YOUR NAME</p>
+        <p>Additional information about the data and map goes here.</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script>
+        //places is defined as a feature collection - object within can be redefined by L.geoJson as a feature layer.
+        var places = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "marker-color": "#7e7e7e",
+                        "marker-size": "medium",
+                        "marker-symbol": "",
+                        "Size": 159,
+                        "Name": "Tallinn"
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+          24.75219726562499,
+          59.50087955346417
+        ]
+                    }
+    },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "marker-color": "#7e7e7e",
+                        "marker-size": "medium",
+                        "marker-symbol": "",
+                        "Name": "Happsalu",
+                        "Size": 11
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+          23.521728515625,
+          58.97266715450153
+        ]
+                    }
+    },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "marker-color": "#7e7e7e",
+                        "marker-size": "medium",
+                        "marker-symbol": "",
+                        "Name": "Tartu",
+                        "Size": 39
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                        26.729736328125,
+                            58.41322259056804
+        ]
+                    }
+    },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "marker-color": "#7e7e7e",
+                        "marker-size": "medium",
+                        "marker-symbol": "",
+                        "Name": "Parnu",
+                        "Size": 32
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+          24.532470703125,
+          58.41322259056804
+        ]
+                    }
+    }
+  ]
+        }
+
+        var map = L.map('map', {
+            center: [58.73, 25.67],
+            zoom: 7
+        });
+
+        var tiles = L.tileLayer('http://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.{ext}', {
+            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            subdomains: 'abcd',
+            maxZoom: 19,
+            ext: 'png'
+        });
+
+        tiles.addTo(map);
+
+        //var placesLeaflet = L.geoJson(places).addTo(map); //takes the places variable, transforms into a geojson layer with markers, adds to map //did this without reading the directions!
+        //console.log(places);
+        //console.log(placesLeaflet);
+
+        // var placesLeaflet = L.geoJson(places, { //same code as above, but with added options  //GeoJson feature collection is passed as the first argument- and then default points are converted to cricle objects
+        //     pointToLayer: function (f, ll) { //turns the latlng and each feature into a layer...arbitrary names, could be feature and latlng, which is what this function accepts as per API,
+        //         console.log(f.properties.Size); //modify this to access different properties of each feature
+        //        return L.circle(ll, 20000); //the layer is returned to the map as a circle with a defined latlng and radius /// it is drawn to map by the L.geoJson method
+        //     }
+        //  }).addTo(map);
+
+        var placesLeaflet = L.geoJson(places, {
+            pointToLayer: function (f, ll) {
+                return L.circle(ll, f.properties.Size * 100); //returns a circle radius based on the size of the town.
+            }
+        }).addTo(map);
+    </script>
+
+</body>
+
+</html>
